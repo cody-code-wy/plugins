@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include "util/standarditem.h"
 #include "xdg/iconlookup.h"
+#include "dictconnection.h"
 #include "configwidget.h"
 #include "extension.h"
 using namespace Core;
@@ -25,6 +26,15 @@ Dictionary::Extension::Extension()
       d(new Private) {
 
     registerQueryHandler(this);
+
+    Dictionary::DICTConnection dict("localhost");
+
+    if (dict.connected) {
+      dict.define(QString("test"));
+      dict.define(QString("nonword"));
+    }else{
+      throw std::runtime_error("Could not connect to DICT server");
+    }
 
 }
 
@@ -60,50 +70,28 @@ void Dictionary::Extension::teardownSession() {
 
 
 /** ***************************************************************************/
-void Dictionary::Extension::handleQuery(Core::Query *) const {
+void Dictionary::Extension::handleQuery(Core::Query * query) const {
 
-    /*
-     * Things change so often I wont maintain this tutorial here. Check the relevant headers.
-     *
-     * - core/extension.h
-     * - core/queryhandler.h
-     * - core/query.h
-     * - core/item.h
-     * - core/action.h
-     * - util/standarditem.h
-     * - util/offlineindex.h
-     * - util/standardindexitem.h
-     *
-     * Use
-     *
-     *   query->addMatch(my_item)
-     *
-     * to add matches. If you created a throw away item MOVE it instead of
-     * copying e.g.:
-     *
-     *   query->addMatch(std::move(my_tmp_item))
-     *
-     * The relevance factor is optional. (Defaults to 0) its a usigned integer depicting the
-     * relevance of the item 0 mean not relevant UINT_MAX is totally relevant (exact match).
-     * E.g. it the query is "it" and your items name is "item"
-     *
-     *   my_item.name().startswith(query->string)
-     *
-     * is a naive match criterion and
-     *
-     *   UINT_MAX / ( query.searchterm().size() / my_item.name().size() )
-     *
-     * a naive match factor.
-     *
-     * If you have a lot of items use the iterator versions addMatches, e.g. like that
-     *
-     *   query->addMatches(my_items.begin(), my_items.end());
-     *
-     * If the items in the container are temporary object move them to avoid uneccesary
-     * reference counting:
-     *
-     *   query->addMatches(std::make_move_iterator(my_tmp_items.begin()),
-     *                     std::make_move_iterator(my_tmp_items.end()));
-     */
+    auto item = make_shared<StandardItem>("dictionary");
+    /* item->setIconPath(d->iconPath);
+    d->locale.setNumberOptions(settings().value(CFG_SEPS, CFG_SEPS_DEF).toBool()
+                               ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
+                               : d->locale.numberOptions() | QLocale::OmitGroupSeparator ); */
+    item->setText(QString("Dictionary"));
+    item->setCompletion(item->text());
+    /* item->addAction(make_shared<ClipAction>("Copy result to clipboard",
+                                            d->locale.toString(result, 'G', 16)));
+    item->addAction(make_shared<ClipAction>("Copy equation to clipboard",
+                                            QString("%1 = %2").arg(query->string(), item->text()))); */
+
+    Dictionary::DICTConnection dict("localhost");
+
+    if (dict.connected) {
+      item->setSubtext(dict.define(query->string()));
+    }else{
+      throw std::runtime_error("Could not connect to DICT server");
+    }
+
+    query->addMatch(move(item), UINT_MAX);
 }
 
