@@ -1,0 +1,10 @@
+{
+    "id" :              "org.albert.extension.dictionary",
+    "name" :            "Dictionary",
+    "version" :         "1.0",
+    "platform" :        "All",
+    "group" :           "Extensions",
+    "author" :          "William Young",
+    "dependencies" :    [],
+    "enabledbydefault": false
+}

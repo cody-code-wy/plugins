@@ -46,6 +46,11 @@ if (BUILD_DEBUG)
     add_subdirectory(debug)
 endif()
 
+option(BUILD_DICTIONARY "Build the extension" ON)
+if (BUILD_DICTIONARY)
+    add_subdirectory(dictionary)
+endif()
+
 option(BUILD_FILES "Build the extension" ON)
 if (BUILD_FILES)
     add_subdirectory(files)
