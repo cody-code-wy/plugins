@@ -5,6 +5,7 @@
 #include <memory>
 #include "core/extension.h"
 #include "core/queryhandler.h"
+#include "dictconnection.h"
 
 namespace Dictionary {
 

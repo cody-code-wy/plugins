@@ -21,20 +21,11 @@ public:
 
 /** ***************************************************************************/
 Dictionary::Extension::Extension()
-    : Core::Extension("org.albert.extension.dictionary"), // Must match the id in metadata
+    : Core::Extension("org.albert.extension.connectionionary"), // Must match the id in metadata
       Core::QueryHandler(Core::Plugin::id()),
-      d(new Private) {
+      d(new Private){
 
     registerQueryHandler(this);
-
-    Dictionary::DICTConnection dict("localhost");
-
-    if (dict.connected) {
-      dict.define(QString("test"));
-      dict.define(QString("nonword"));
-    }else{
-      throw std::runtime_error("Could not connect to DICT server");
-    }
 
 }
 
@@ -57,14 +48,12 @@ QWidget *Dictionary::Extension::widget(QWidget *parent) {
 
 /** ***************************************************************************/
 void Dictionary::Extension::setupSession() {
-
 }
 
 
 
 /** ***************************************************************************/
 void Dictionary::Extension::teardownSession() {
-
 }
 
 
@@ -72,26 +61,25 @@ void Dictionary::Extension::teardownSession() {
 /** ***************************************************************************/
 void Dictionary::Extension::handleQuery(Core::Query * query) const {
 
-    auto item = make_shared<StandardItem>("dictionary");
-    /* item->setIconPath(d->iconPath);
-    d->locale.setNumberOptions(settings().value(CFG_SEPS, CFG_SEPS_DEF).toBool()
-                               ? d->locale.numberOptions() & ~QLocale::OmitGroupSeparator
-                               : d->locale.numberOptions() | QLocale::OmitGroupSeparator ); */
-    item->setText(QString("Dictionary"));
-    item->setCompletion(item->text());
-    /* item->addAction(make_shared<ClipAction>("Copy result to clipboard",
-                                            d->locale.toString(result, 'G', 16)));
-    item->addAction(make_shared<ClipAction>("Copy equation to clipboard",
-                                            QString("%1 = %2").arg(query->string(), item->text()))); */
+    DICTConnection connection("localhost");
 
-    Dictionary::DICTConnection dict("localhost");
+    connection.beginConnection();
 
-    if (dict.connected) {
-      item->setSubtext(dict.define(query->string()));
-    }else{
-      throw std::runtime_error("Could not connect to DICT server");
+    connection.define(query->string());
+    connection.splitDefinitions();
+    qDebug() << connection.latestReturnCode;
+    qDebug() << "definition count: " << connection.getDefinitionCount();
+    uint priority = UINT_MAX;
+    while(connection.getDefinitionCount() > 0){
+      if(connection.latestReturnCode == OK){
+        auto item = make_shared<StandardItem>("connectionionary");
+        item->setText(QString("Defenition of: ") + query->string());
+        item->setCompletion(item->text());
+        item->setSubtext(connection.getNextDefinition());
+        query->addMatch(move(item), (priority--));
+      }
     }
 
-    query->addMatch(move(item), UINT_MAX);
+    connection.endConnection();
 }
 
